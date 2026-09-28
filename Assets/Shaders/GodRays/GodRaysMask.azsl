@@ -1,0 +1,57 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+#include <Atom/Features/SrgSemantics.azsli>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float> m_depth;
+    Texture2D<float4> m_input;
+    float4 m_inputSize;
+    float4 m_shape; // length, falloff, source radius, source softness
+    float4 m_mix; // intensity, maximum brightness, background amount, end fade start
+    float4 m_quality; // samples, edge fade, filter strength, reserved
+    float4 m_tint;
+    float4 m_direction;
+    float4 m_viewport;
+    float4 m_targetSize;
+    Sampler PointSampler
+    {
+        MinFilter = Point;
+        MagFilter = Point;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+    Sampler LinearSampler
+    {
+        MinFilter = Linear;
+        MagFilter = Linear;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+}
+#include "GodRaysCommon.azsli"
+
+PSOutput MainPS(VSOutput IN)
+{
+    float3 source = SourcePosition();
+    float2 sums = 0.0;
+    float skyCoverage = 0.0;
+    // Four taps preserve subpixel coverage when reducing the depth mask.
+    for (uint i = 0; i < 4; ++i)
+    {
+        float2 offset = (float2(i & 1, i >> 1) - 0.5) * 0.5 * PassSrg::m_targetSize.zw;
+        float2 uv = IN.m_texCoord + offset;
+        float sky = Sky(PassSrg::m_depth.SampleLevel(PassSrg::PointSampler, uv, 0));
+        float potential = SourceMask(uv, source);
+        sums += float2(sky * potential, potential);
+        skyCoverage += sky;
+    }
+    float depth = PassSrg::m_depth.SampleLevel(PassSrg::PointSampler, IN.m_texCoord, 0);
+    PSOutput OUT;
+    OUT.m_color = float4(sums * 0.25, skyCoverage * 0.25, depth);
+    return OUT;
+}

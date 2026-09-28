@@ -1,0 +1,32 @@
+{
+    "gem_name": "GodRays",
+    "version": "1.0.0",
+    "display_name": "God Rays",
+    "license": "MIT",
+    "license_url": "https://github.com/Atmosaero/GodRays-O3DE/blob/main/LICENSE",
+    "origin": "Atmosaero",
+    "origin_url": "https://github.com/Atmosaero/GodRays-O3DE",
+    "type": "Code",
+    "summary": "Configurable screen-space light shafts for the O3DE Atom renderer, with reduced-resolution rendering and depth-aware filtering.",
+    "canonical_tags": [
+        "Gem"
+    ],
+    "user_tags": [
+        "Environment","Lighting","GodRays","Rendering","AtomShader"
+    ],
+    "platforms": [
+        "Android","iOS","Windows","Linux"
+    ],
+    "icon_path": "",
+    "requirements": "",
+    "documentation_url": "https://github.com/Atmosaero/GodRays-O3DE#readme",
+    "dependencies": [
+        "Atom_RPI",
+        "Atom"
+    ],
+    "repo_uri": "",
+    "compatible_engines": [
+    ],
+    "engine_api_dependencies":[
+    ]
+}

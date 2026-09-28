@@ -1,0 +1,70 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+#include <Atom/Features/SrgSemantics.azsli>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float> m_depth;
+    Texture2D<float4> m_input;
+    float4 m_inputSize;
+    float4 m_shape; // length, falloff, source radius, source softness
+    float4 m_mix; // intensity, maximum brightness, background amount, end fade start
+    float4 m_quality; // samples, edge fade, filter strength, reserved
+    float4 m_tint;
+    float4 m_direction;
+    float4 m_viewport;
+    float4 m_targetSize;
+    Sampler PointSampler
+    {
+        MinFilter = Point;
+        MagFilter = Point;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+    Sampler LinearSampler
+    {
+        MinFilter = Linear;
+        MagFilter = Linear;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+}
+#include "GodRaysCommon.azsli"
+
+PSOutput MainPS(VSOutput IN)
+{
+    float depth = PassSrg::m_depth.SampleLevel(PassSrg::PointSampler, IN.m_texCoord, 0);
+    float2 texel = IN.m_texCoord * PassSrg::m_inputSize.xy - 0.5;
+    float2 origin = floor(texel);
+    float2 fraction = frac(texel);
+    float2 sum = 0.0;
+    float weights = 0.0;
+    for (uint i = 0; i < 4; ++i)
+    {
+        float2 offset = float2(i & 1, i >> 1);
+        float2 uv = (origin + offset + 0.5) * PassSrg::m_inputSize.zw;
+        float4 tap = PassSrg::m_input.SampleLevel(PassSrg::PointSampler, uv, 0);
+        float2 axisWeight = lerp(1.0 - fraction, fraction, offset);
+        float weight = axisWeight.x * axisWeight.y * DepthWeight(depth, tap.a);
+        sum += tap.rg * weight;
+        weights += weight;
+    }
+    // A surface thinner than a reduced pixel may have no matching neighbour.
+    // Suppress its contribution rather than borrowing light across its silhouette.
+    float2 integrated = weights > 0.0001 ? sum / weights : float2(0.0, 0.0);
+    float visibility = saturate(integrated.x / max(integrated.y, 0.00001));
+    // Accent only partially occluded paths. Fully open sky has L == potential
+    // and contributes zero unless the artist explicitly enables background glow.
+    float accent = integrated.x * saturate(4.0 * (1.0 - visibility));
+    float signal = lerp(accent, integrated.x, PassSrg::m_mix.z);
+    float3 color = PassSrg::m_tint.rgb * signal * PassSrg::m_mix.x;
+    float peak = max(max(color.r, color.g), color.b);
+    color *= min(1.0, PassSrg::m_mix.y / max(peak, 0.00001));
+    PSOutput OUT;
+    OUT.m_color = float4(color, 0.0); // One + One RGB, preserve destination alpha.
+    return OUT;
+}

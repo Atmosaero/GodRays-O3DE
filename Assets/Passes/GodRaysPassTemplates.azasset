@@ -1,0 +1,29 @@
+{
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "AssetAliasesSourceData",
+    "ClassData": {
+        "AssetPaths": [
+            {
+                "Name": "GodRaysPassTemplate",
+                "Path": "Passes/GodRays.pass"
+            },
+            {
+                "Name": "GodRaysMaskTemplate",
+                "Path": "Passes/GodRaysMask.pass"
+            },
+            {
+                "Name": "GodRaysIntegrateTemplate",
+                "Path": "Passes/GodRaysIntegrate.pass"
+            },
+            {
+                "Name": "GodRaysFilterTemplate",
+                "Path": "Passes/GodRaysFilter.pass"
+            },
+            {
+                "Name": "GodRaysCompositeTemplate",
+                "Path": "Passes/GodRaysComposite.pass"
+            }
+        ]
+    }
+}

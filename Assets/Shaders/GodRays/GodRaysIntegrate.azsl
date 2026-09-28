@@ -1,0 +1,66 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+#include <Atom/Features/SrgSemantics.azsli>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float> m_depth;
+    Texture2D<float4> m_input;
+    float4 m_inputSize;
+    float4 m_shape; // length, falloff, source radius, source softness
+    float4 m_mix; // intensity, maximum brightness, background amount, end fade start
+    float4 m_quality; // samples, edge fade, filter strength, reserved
+    float4 m_tint;
+    float4 m_direction;
+    float4 m_viewport;
+    float4 m_targetSize;
+    Sampler PointSampler
+    {
+        MinFilter = Point;
+        MagFilter = Point;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+    Sampler LinearSampler
+    {
+        MinFilter = Linear;
+        MagFilter = Linear;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+}
+#include "GodRaysCommon.azsli"
+
+PSOutput MainPS(VSOutput IN)
+{
+    float3 source = SourcePosition();
+    float4 center = PassSrg::m_input.SampleLevel(PassSrg::PointSampler, IN.m_texCoord, 0);
+    float2 accumulated = 0.0;
+    float totalWeight = 0.0;
+    uint samples = uint(PassSrg::m_quality.x);
+    float attenuationStep = exp(-PassSrg::m_shape.y / float(samples));
+    float attenuation = exp(-0.5 * PassSrg::m_shape.y / float(samples));
+    // Midpoint quadrature: distance-based decay and normalized weights keep
+    // sample count a quality setting, independent of exposure.
+    for (uint i = 0; i < samples; ++i)
+    {
+        float t = (float(i) + 0.5) / float(samples);
+        float2 uv = lerp(IN.m_texCoord, source.xy, t * PassSrg::m_shape.x);
+        float weight = attenuation *
+            (1.0 - smoothstep(PassSrg::m_mix.w, 1.0, t));
+        if (all(uv >= 0.0) && all(uv <= 1.0))
+        {
+            accumulated += PassSrg::m_input.SampleLevel(PassSrg::LinearSampler, uv, 0).rg * weight;
+        }
+        // Outside the frame has neither light nor potential: it cannot act as an occluder.
+        totalWeight += weight;
+        attenuation *= attenuationStep;
+    }
+    PSOutput OUT;
+    OUT.m_color = float4(accumulated / max(totalWeight, 0.0001), center.ba);
+    return OUT;
+}

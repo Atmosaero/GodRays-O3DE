@@ -1,0 +1,32 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+float Sky(float depth) { return 1.0 - step(1e-10, depth); }
+
+float DepthWeight(float a, float b)
+{
+    if (Sky(a) != Sky(b)) { return 0.0; }
+    return exp2(-32.0 * abs(a - b) / max(max(a, b), 0.0001));
+}
+
+// Never project the opposite vanishing point when the light is behind the camera.
+float3 SourcePosition()
+{
+    float3 toLight = -PassSrg::m_direction.xyz;
+    float facing = dot(-ViewSrg::m_viewMatrix[2].xyz, toLight);
+    float4 clip = mul(ViewSrg::m_viewProjectionMatrix,
+        float4(ViewSrg::m_worldPosition + toLight * 1000.0, 1.0));
+    if (facing <= 0.0 || clip.w <= 0.0001) { return float3(0.5, 0.5, 0.0); }
+    float2 uv = clip.xy / clip.w * float2(0.5, -0.5) + 0.5;
+    float2 outside = max(abs(uv - 0.5) - 0.5, 0.0);
+    outside.x *= PassSrg::m_viewport.x / PassSrg::m_viewport.y;
+    float fade = 1.0 - smoothstep(0.0, PassSrg::m_quality.y, length(outside));
+    return float3(uv, fade * smoothstep(0.0, 0.2, facing));
+}
+
+float SourceMask(float2 uv, float3 source)
+{
+    float2 delta = uv - source.xy;
+    delta.x *= PassSrg::m_viewport.x / PassSrg::m_viewport.y;
+    float radius = PassSrg::m_shape.z;
+    return source.z * (1.0 - smoothstep(
+        radius * (1.0 - PassSrg::m_shape.w), radius, length(delta)));
+}

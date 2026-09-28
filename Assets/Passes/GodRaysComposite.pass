@@ -1,0 +1,47 @@
+{
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "GodRaysCompositeTemplate",
+            "PassClass": "GodRaysPass",
+            "Slots": [
+                {
+                    "Name": "Input",
+                    "SlotType": "Input",
+                    "ShaderInputName": "m_input",
+                    "ShaderImageDimensionsConstant": "m_inputSize",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    "Name": "Depth",
+                    "SlotType": "Input",
+                    "ShaderInputName": "m_depth",
+                    "ScopeAttachmentUsage": "Shader",
+                    "ImageViewDesc": {
+                        "AspectFlags": [
+                            "Depth"
+                        ]
+                    }
+                },
+                {
+                    "Name": "Color",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load",
+                        "StoreAction": "Store"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "BindViewSrg": true,
+                "ShaderAsset": {
+                    "FilePath": "Shaders/GodRays/GodRays.shader"
+                }
+            }
+        }
+    }
+}

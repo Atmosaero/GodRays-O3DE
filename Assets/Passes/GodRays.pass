@@ -1,0 +1,100 @@
+{
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "GodRaysPassTemplate",
+            "PassClass": "GodRaysParentPass",
+            "Slots": [
+                {
+                    "Name": "Depth",
+                    "SlotType": "Input",
+                    "ScopeAttachmentUsage": "Shader",
+                    "ImageViewDesc": {
+                        "AspectFlags": [
+                            "Depth"
+                        ]
+                    }
+                },
+                {
+                    "Name": "Color",
+                    "SlotType": "InputOutput",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "Load",
+                        "StoreAction": "Store"
+                    }
+                }
+            ],
+            "PassRequests": [
+                {
+                    "Name": "GodRaysMask",
+                    "TemplateName": "GodRaysMaskTemplate",
+                    "Connections": [
+                        {
+                            "LocalSlot": "Depth",
+                            "AttachmentRef": {
+                                "Pass": "Parent",
+                                "Attachment": "Depth"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "Name": "GodRaysIntegrate",
+                    "TemplateName": "GodRaysIntegrateTemplate",
+                    "Connections": [
+                        {
+                            "LocalSlot": "Input",
+                            "AttachmentRef": {
+                                "Pass": "GodRaysMask",
+                                "Attachment": "Output"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "Name": "GodRaysFilter",
+                    "TemplateName": "GodRaysFilterTemplate",
+                    "Connections": [
+                        {
+                            "LocalSlot": "Input",
+                            "AttachmentRef": {
+                                "Pass": "GodRaysIntegrate",
+                                "Attachment": "Output"
+                            }
+                        }
+                    ]
+                },
+                {
+                    "Name": "GodRaysComposite",
+                    "TemplateName": "GodRaysCompositeTemplate",
+                    "Connections": [
+                        {
+                            "LocalSlot": "Input",
+                            "AttachmentRef": {
+                                "Pass": "GodRaysFilter",
+                                "Attachment": "Output"
+                            }
+                        },
+                        {
+                            "LocalSlot": "Depth",
+                            "AttachmentRef": {
+                                "Pass": "Parent",
+                                "Attachment": "Depth"
+                            }
+                        },
+                        {
+                            "LocalSlot": "Color",
+                            "AttachmentRef": {
+                                "Pass": "Parent",
+                                "Attachment": "Color"
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,63 @@
+{
+    "Type": "JsonSerialization",
+    "Version": 1,
+    "ClassName": "PassAsset",
+    "ClassData": {
+        "PassTemplate": {
+            "Name": "GodRaysFilterTemplate",
+            "PassClass": "GodRaysPass",
+            "Slots": [
+                {
+                    "Name": "Input",
+                    "SlotType": "Input",
+                    "ShaderInputName": "m_input",
+                    "ShaderImageDimensionsConstant": "m_inputSize",
+                    "ScopeAttachmentUsage": "Shader"
+                },
+                {
+                    "Name": "Output",
+                    "SlotType": "Output",
+                    "ScopeAttachmentUsage": "RenderTarget",
+                    "LoadStoreAction": {
+                        "LoadAction": "DontCare",
+                        "StoreAction": "Store"
+                    }
+                }
+            ],
+            "PassData": {
+                "$type": "FullscreenTrianglePassData",
+                "BindViewSrg": true,
+                "ShaderAsset": {
+                    "FilePath": "Shaders/GodRays/GodRaysFilter.shader"
+                }
+            },
+            "ImageAttachments": [
+                {
+                    "Name": "Buffer",
+                    "SizeSource": {
+                        "Source": {
+                            "Pass": "This",
+                            "Attachment": "Input"
+                        },
+                        "Multipliers": {
+                            "WidthMultiplier": 1,
+                            "HeightMultiplier": 1
+                        }
+                    },
+                    "ImageDescriptor": {
+                        "Format": "R16G16B16A16_FLOAT"
+                    }
+                }
+            ],
+            "Connections": [
+                {
+                    "LocalSlot": "Output",
+                    "AttachmentRef": {
+                        "Pass": "This",
+                        "Attachment": "Buffer"
+                    }
+                }
+            ]
+        }
+    }
+}

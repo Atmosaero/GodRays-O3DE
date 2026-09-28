@@ -1,0 +1,57 @@
+/* SPDX-License-Identifier: Apache-2.0 OR MIT */
+#include <Atom/Features/SrgSemantics.azsli>
+#include <viewsrg_all.srgi>
+#include <Atom/Features/PostProcessing/FullscreenVertex.azsli>
+#include <Atom/Features/PostProcessing/FullscreenPixelInfo.azsli>
+
+ShaderResourceGroup PassSrg : SRG_PerPass
+{
+    Texture2D<float> m_depth;
+    Texture2D<float4> m_input;
+    float4 m_inputSize;
+    float4 m_shape; // length, falloff, source radius, source softness
+    float4 m_mix; // intensity, maximum brightness, background amount, end fade start
+    float4 m_quality; // samples, edge fade, filter strength, reserved
+    float4 m_tint;
+    float4 m_direction;
+    float4 m_viewport;
+    float4 m_targetSize;
+    Sampler PointSampler
+    {
+        MinFilter = Point;
+        MagFilter = Point;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+    Sampler LinearSampler
+    {
+        MinFilter = Linear;
+        MagFilter = Linear;
+        MipFilter = Point;
+        AddressU = Clamp;
+        AddressV = Clamp;
+    };
+}
+#include "GodRaysCommon.azsli"
+
+PSOutput MainPS(VSOutput IN)
+{
+    float4 center = PassSrg::m_input.SampleLevel(PassSrg::PointSampler, IN.m_texCoord, 0);
+    float2 sum = 0.0;
+    float weights = 0.0;
+    for (int y = -1; y <= 1; ++y)
+    {
+        for (int x = -1; x <= 1; ++x)
+        {
+            float2 uv = IN.m_texCoord + float2(x, y) * PassSrg::m_inputSize.zw;
+            float4 tap = PassSrg::m_input.SampleLevel(PassSrg::PointSampler, uv, 0);
+            float weight = (x == 0 ? 2.0 : 1.0) * (y == 0 ? 2.0 : 1.0) * DepthWeight(center.a, tap.a);
+            sum += tap.rg * weight;
+            weights += weight;
+        }
+    }
+    PSOutput OUT;
+    OUT.m_color = float4(lerp(center.rg, sum / max(weights, 0.0001), PassSrg::m_quality.z), center.ba);
+    return OUT;
+}
